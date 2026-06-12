@@ -1,6 +1,3 @@
-/* -----------------------------------------------------------------------
- * Pin mapping — change here to adapt to your board.
- * ----------------------------------------------------------------------- */
 #define ACT_FORWARD_PORT     GPIOA
 #define ACT_FORWARD_PIN      GPIO_PIN_0
  
