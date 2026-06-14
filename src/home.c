@@ -29,8 +29,10 @@ static bool check_switch(bool input, home_t *h)
 void Homing_start(home_t h*)
 {
     h->state= EXTEND_TO_END;
-    h->phase_start_ms=0;
+    h->start_time =0;
     h->travel_time=0;
+    h->debounce = 0;
+    h->is_switch_presed=false;
 }
 
 Homing_move()
@@ -45,25 +47,52 @@ Homing_move()
     /*Dothing*/
     case EXTEND_TO_END:
 
-    if (h->start_time == 0) 
+       if (h->start_time  == 0) {
+            h->start_time  = now;
+            set_backward(true);
+            break;
+        }
+ 
+       if (check_switch(read_forward_switch(), h)) {
+            h->state= SHRINKED_FULL;
+            h->phase_start_ms = 0;
+        }
+        break;
+
+    case EXTEND_TO_MIDDLE:
+
+        if (h->start_time  == 0) 
         {
-            h->start_time = now;
+            h->start_time  = now;
             set_forward(true);
             break;
         }
  
-
-    case EXTEND_TO_MIDDLE:
-
-
+        {
+        unsigned int passed = now - h->start_time ;
+        unsigned int target  = h->travel_time / 2u;
+ 
+        if ( passed >= target) 
+        {
+                h->state =  HOMING_DONE;
+            }
+        }
+        break;
 
     case SHRINKED_FULL:
-    if (h->start_time == 0) 
-        {
-            h->start_time = now;
+        if (h->start_time  == 0) {
+            h->start_time  = now;
             set_backward(true);
             break;
         }
+ 
+ 
+        if (check_switch(read_backward_switch(), h)) {
+            h->travel_time = now - h->start_time;
+            h->state= HOMING_FORWARD_TO_MIDDLE;
+            h->start_time  = 0;
+        }
+        break;
   }
  
 }
