@@ -22,7 +22,10 @@ static bool check_switch(bool input, home_t *h)
     return (now - h->debounce) >= 20u;
 }
  
-
+static bool timed_out(const Homing_t *h)
+{
+    return (get_tick_ms() - h->phase_start_ms) >= 10000u;
+}
 
 /*  API */
 
@@ -52,7 +55,11 @@ Homing_move()
             set_backward(true);
             break;
         }
- 
+        if ((get_tick_ms() - h->phase_start_ms) >= 10000u) /* timeout*/
+        {
+            h->state = HOMING_ERROR;
+            break;
+        }
        if (check_switch(read_forward_switch(), h)) {
             h->state= SHRINKED_FULL;
             h->phase_start_ms = 0;
@@ -67,15 +74,21 @@ Homing_move()
             set_forward(true);
             break;
         }
- 
+
+        if ((get_tick_ms() - h->phase_start_ms) >= 10000u) /* timeout*/
+        {
+            h->state = HOMING_ERROR;
+            break;
+        }
+
         {
         unsigned int passed = now - h->start_time ;
-        unsigned int target  = h->travel_time / 2u;
+        unsigned int target_mid  = h->travel_time / 2u;
  
-        if ( passed >= target) 
+        if ( passed >= target_mid) 
         {
-                h->state =  HOMING_DONE;
-            }
+            h->state =  HOMING_DONE;
+        }
         }
         break;
 
@@ -85,7 +98,13 @@ Homing_move()
             set_backward(true);
             break;
         }
- 
+
+        if ((get_tick_ms() - h->phase_start_ms) >= 10000u) /* timeout*/
+        {
+            h->state = HOMING_ERROR;
+            break;
+        }
+
  
         if (check_switch(read_backward_switch(), h)) {
             h->travel_time = now - h->start_time;
