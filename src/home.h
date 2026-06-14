@@ -17,6 +17,8 @@ typedef struct {
     state_t state;
     unsigned int start_time;
     unsigned int travel_time;
+    unsigned int debounce;
+    bool is_switch_presed;
 } home_t;
 
 /*  API */
