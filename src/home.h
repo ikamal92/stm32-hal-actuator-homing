@@ -5,14 +5,19 @@
 typedef enum {
     IDLE = 0,
     EXTEND_TO_END,   /*forward*/
-    SHRINKED_FULL,  /*backwards*/  
     EXTEND_TO_MIDDLE, /*middle*/
+    SHRINKED_FULL,     /*backwards*/  
     DONE,
     ERROR
 } state_t;
 
 
 
+typedef struct {
+    state_t state;
+    unsigned int start_time;
+    unsigned int travel_time;
+} home_t;
 
 /*  API */
 
