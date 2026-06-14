@@ -34,5 +34,10 @@ static bool read_extended_switch(void)
 static bool read_SHRINKED_switch(void)
 {
     GPIO_PinState pin_state = HAL_GPIO_ReadPin(INPUT_SHRINKED_PORT, INPUT_SHRINKED_PIN);
-     return pin_state == GPIO_PIN_SET;
+    return pin_state == GPIO_PIN_SET;
+}
+
+unsigned int get_tick_ms(void)
+{
+    return HAL_GetTick(); // definded in stm32f4xx_hal.c
 }
