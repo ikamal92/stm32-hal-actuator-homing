@@ -1,6 +1,9 @@
 #ifndef HOME_H
 #define HOME_H
 
+#define DEBOUNCE  20u       
+#define TIMEOUT  10000u    
+
 
 typedef enum {
     IDLE = 0,
@@ -23,11 +26,11 @@ typedef struct {
 
 /*  API */
 
-void Homing_start();
+void Homing_start(home_t h*);
 
 
-void Homing_move();
+void Homing_move(home_t h*);
 
-void Homing_abort();
+void Homing_abort(home_t h*);
 
 #endif 

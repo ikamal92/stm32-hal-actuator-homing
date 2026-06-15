@@ -6,8 +6,12 @@ static bool check_switch(bool input, home_t *h)
     uint32_t now = get_tick_ms();
 
     if (!input) 
-    {
-        /*Do thing*/
+    {   
+        /*reset debounce*/
+        h->is_switch_presed = false;
+        h->debounce = 0;
+
+        return false;
     }
 
     /* switch just pressed  */
@@ -22,10 +26,6 @@ static bool check_switch(bool input, home_t *h)
     return (now - h->debounce) >= 20u;
 }
  
-static bool timed_out(const Homing_t *h)
-{
-    return (get_tick_ms() - h->phase_start_ms) >= 10000u;
-}
 
 /*  API */
 
@@ -38,31 +38,39 @@ void Homing_start(home_t h*)
     h->is_switch_presed=false;
 }
 
-Homing_move()
+void Homing_move(home_t h*)
 {
-    uint32_t time_now = get_tick_ms();
+    uint32_t now= get_tick_ms();
 
     switch (h->state) {
  
     case IDLE:
     case DONE:
     case ERROR:
-    /*Dothing*/
+         set_forward(false);
+         set_backward(false);
+        break;
     case EXTEND_TO_END:
 
-       if (h->start_time  == 0) {
-            h->start_time  = now;
-            set_backward(true);
+       if (h->start_time  == 0) 
+       {
+            h->start_time = now;
+            h->is_switch_presed = false;
+            h->debounce = 0;
+            set_backward(false);
+            set_forward(true);
             break;
         }
-        if ((get_tick_ms() - h->phase_start_ms) >= 10000u) /* timeout*/
-        {
+        if ((get_tick_ms() - h->start_time) >= TIMEOUT) /* timeout*/
+        {   set_forward(false);
             h->state = HOMING_ERROR;
             break;
         }
-       if (check_switch(read_forward_switch(), h)) {
+       if (check_switch(read_extended_switch(), h)) {
+
+            /* next step*/
             h->state= SHRINKED_FULL;
-            h->phase_start_ms = 0;
+            h->start_time = 0;
         }
         break;
 
@@ -71,13 +79,17 @@ Homing_move()
         if (h->start_time  == 0) 
         {
             h->start_time  = now;
+            h->is_switch_presed = false;
+            h->debounce = 0;
+            set_backward(false);
             set_forward(true);
             break;
         }
 
-        if ((get_tick_ms() - h->phase_start_ms) >= 10000u) /* timeout*/
+        if ((get_tick_ms() - h->start_time) >= TIMEOUT) /* timeout*/
         {
             h->state = HOMING_ERROR;
+            set_forward(false);
             break;
         }
 
@@ -86,7 +98,7 @@ Homing_move()
         unsigned int target_mid  = h->travel_time / 2u;
  
         if ( passed >= target_mid) 
-        {
+        {   set_forward(false);
             h->state =  HOMING_DONE;
         }
         }
@@ -95,20 +107,25 @@ Homing_move()
     case SHRINKED_FULL:
         if (h->start_time  == 0) {
             h->start_time  = now;
+            h->is_switch_presed = false;
+            h->debounce = 0;
+            set_forward(false);
             set_backward(true);
             break;
         }
 
-        if ((get_tick_ms() - h->phase_start_ms) >= 10000u) /* timeout*/
+        if ((get_tick_ms() - h->start_time) >= TIMEOUT) /* timeout*/
         {
+            set_backward(false);
             h->state = HOMING_ERROR;
             break;
         }
 
  
-        if (check_switch(read_backward_switch(), h)) {
+        if (check_switch(read_SHRINKED_switch(), h)) {
             h->travel_time = now - h->start_time;
-            h->state= HOMING_FORWARD_TO_MIDDLE;
+            /* next step*/
+            h->state= HOMING_FORWARD_TO_MIDDLE; 
             h->start_time  = 0;
         }
         break;
@@ -119,6 +136,8 @@ Homing_move()
 void Homing_abort(home_t h*)
 {   
     h->state= IDLE;
+    set_forward(false);
+    set_backward(false);
     h->start_time = 0;
     h->travel_time = 0;
 
